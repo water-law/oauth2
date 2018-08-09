@@ -40,7 +40,7 @@ def _encode_params(**kw):
             args.append('%s=%s' % (k, urllib2.quote(qv)))
         elif isinstance(v, collections.Iterable):
             for i in v:
-                qv = i.encode('utf-8') if isinstance(v, unicode) else v
+                qv = i.encode('utf-8') if isinstance(i, unicode) else i
                 args.append('%s=%s' % (k, urllib2.quote(qv)))
         else:
             qv = str(v)

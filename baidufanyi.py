@@ -12,6 +12,18 @@ appid = ''  # 你的appid
 secretKey = ''  # 你的密钥
 
 
+class APIError(Exception):
+    def __init__(self, error_code, error, request):
+        self.error_code = error_code
+        self.error = error
+        self.request = request
+        Exception.__init__(self, error)
+
+    def __str__(self):
+        return 'APIError: %s: %s, request: %s' % (
+            self.error_code, self.error, self.request)
+
+
 class XRequest:
 
     def __init__(self, api_domain):
@@ -42,16 +54,27 @@ class XRequest:
         return '&'.join(args)
 
     def request(self, method, url, params):
-        target = None
-        full_url = '%s?%s' % (url, self._encode_params(**params))
-        try:
-            self.httpClient.request(method, full_url)
-            response = self.httpClient.getresponse()
-            result = json.loads(response.read().decode())
+        target = None, ''
+        url = '%s?%s' % (url, self._encode_params(**params))
+        self.httpClient.request(method, url)
+        response = self.httpClient.getresponse()
+        result = json.loads(response.read().decode())
+        if 'error_code' in result.keys():
+            error_code = int(result['error_code'])
+            error = str(result['error_msg'])
+            if error_code == 52001 or error_code == 52002:
+                return target, 'TIMEOUT'
+            elif error_code == 54003 or error_code == 54005:
+                return target, 'HIGHFREQ'
+            else:
+                raise APIError(
+                    error_code=error_code,
+                    error=error,
+                    request='{scheme}://{domain}{url}'.format(scheme='http', domain="api.fanyi.baidu.com", url=url)
+                )
+        else:
             target = result['trans_result'][0]['dst']
-        except Exception as e:
-            traceback.format_exc(e)
-        return target
+        return target, ''
 
 
 class BaiduTranslator:

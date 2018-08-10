@@ -6,7 +6,6 @@ from http import client as httplib
 from urllib import request as urllib
 import hashlib
 import random
-import traceback
 
 appid = ''  # 你的appid
 secretKey = ''  # 你的密钥
@@ -63,8 +62,10 @@ class XRequest:
             error_code = int(result['error_code'])
             error = str(result['error_msg'])
             if error_code == 52001 or error_code == 52002:
+                self.httpClient.close()
                 return target, 'TIMEOUT'
             elif error_code == 54003 or error_code == 54005:
+                self.httpClient.close()
                 return target, 'HIGHFREQ'
             else:
                 raise APIError(
@@ -74,6 +75,7 @@ class XRequest:
                 )
         else:
             target = result['trans_result'][0]['dst']
+        self.httpClient.close()
         return target, ''
 
 

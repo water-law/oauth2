@@ -53,7 +53,7 @@ class XRequest:
         return '&'.join(args)
 
     def request(self, method, url, params):
-        target = None, ''
+        target = None
         url = '%s?%s' % (url, self._encode_params(**params))
         self.httpClient.request(method, url)
         response = self.httpClient.getresponse()
@@ -61,22 +61,19 @@ class XRequest:
         if 'error_code' in result.keys():
             error_code = int(result['error_code'])
             error = str(result['error_msg'])
-            if error_code == 52001 or error_code == 52002:
+            if error_code in [52001, 52002, 54003, 54005]:
                 self.httpClient.close()
-                return target, 'TIMEOUT'
-            elif error_code == 54003 or error_code == 54005:
-                self.httpClient.close()
-                return target, 'HIGHFREQ'
+                return target
             else:
-                raise APIError(
-                    error_code=error_code,
-                    error=error,
-                    request='{scheme}://{domain}{url}'.format(scheme='http', domain="api.fanyi.baidu.com", url=url)
-                )
+                raise APIError(error_code=error_code, error=error, request='{scheme}://{domain}{url}'.format(
+                    scheme='http',
+                    domain="api.fanyi.baidu.com",
+                    url=url
+                ))
         else:
             target = result['trans_result'][0]['dst']
         self.httpClient.close()
-        return target, ''
+        return target
 
 
 class BaiduTranslator:
